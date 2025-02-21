@@ -1,0 +1,44 @@
+% Si escriben F, la ESP32 debería contestarles "Avanzando"
+% Si escribenn B, la ESP32 debería contestarles "Retrocediendo"
+% Conectar al dispositivo Bluetooth
+b = bluetooth("Mono_Carrito", 1);  % "Mono_Carrito" es el nombre del dispositivo, 1 es el canal
+
+% Verificar la conexión
+if ~isempty(b)
+    disp('Conexión Bluetooth establecida.');
+else
+    error('No se pudo conectar al dispositivo Bluetooth.');
+end
+
+% Loop para enviar comandos
+while true
+    % Solicitar un comando al usuario
+    comando = input('Ingresa un comando (o "q" para salir): ', 's');
+    % Verificar si el usuario quiere salir
+    if strcmpi(comando, 'q')  % 'q' para salir (no distingue mayúsculas/minúsculas)
+        
+        disp('Saliendo del loop...');
+        break;  % Salir del loop
+    end
+    
+    % Enviar el comando al ESP32
+    writeline(b, comando);
+    disp(['Comando enviado: ', comando]);
+    
+
+    % Leer la respuesta del ESP32 (si es necesario)
+    if b.BytesAvailable > 0
+
+        respuesta = readline(b);
+        disp(['Respuesta del ESP32: ', respuesta]);
+    else
+
+        disp('No hay respuesta del ESP32.');
+    end
+end
+
+%% Cerrar la conexión Bluetooth
+clear b;
+clear comando;
+clear respuesta;
+disp('Conexión Bluetooth cerrada.');
