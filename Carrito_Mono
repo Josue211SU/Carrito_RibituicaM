@@ -1,0 +1,119 @@
+#include "BluetoothSerial.h"
+#include <ESP32Servo.h>  // Biblioteca compatible con ESP32
+
+// Verifica si Bluetooth está habilitado
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth no está habilitado! Por favor, revisa tu configuración.
+#endif
+
+// Crea una instancia de BluetoothSerial
+BluetoothSerial SerialBT;
+
+// Nombre del dispositivo Bluetooth
+const char* deviceName = "Mono_Carrito";
+
+// Variable para almacenar el comando recibido
+String receivedCommand = "";
+
+// Definir servomotores y pines
+Servo servoIzquierdo;
+Servo servoDerecho;
+
+const int pinServoIzquierdo = 12;
+const int pinServoDerecho = 13;
+
+// Configuración de los servos
+const int AVANZAR = 110;  // Velocidad máxima hacia adelante
+const int RETROCEDER = 70; // Velocidad máxima hacia atrás
+const int PARADO = 90;    // Detenerse (posición neutra)
+
+void setup() {
+  // Inicia la comunicación serial (para depuración)
+  Serial.begin(115200);
+
+  // Inicia el Bluetooth
+  SerialBT.begin(deviceName);
+  Serial.println("Bluetooth iniciado. ¡Listo para emparejar!");
+
+  // Configurar los pines de los servos
+  servoIzquierdo.setPeriodHertz(50);  // Frecuencia típica de servos
+  servoDerecho.setPeriodHertz(50);
+  servoIzquierdo.attach(pinServoIzquierdo);
+  servoDerecho.attach(pinServoDerecho);
+
+  // Asegurar que los servos estén detenidos al inicio
+  detener();
+}
+
+void loop() {
+  // Verifica si hay datos disponibles para leer desde Bluetooth
+  while (SerialBT.available()) {
+    char incomingChar = SerialBT.read();  // Lee el carácter recibido
+
+    // Si el carácter es un salto de línea, procesa el comando
+    if (incomingChar == '\n') {
+      processCommand(receivedCommand);  // Procesa el comando
+      receivedCommand = "";  // Limpia la variable para el siguiente comando
+    } else {
+      // Agrega el carácter recibido al comando
+      receivedCommand += incomingChar;
+    }
+  }
+}
+
+// Función para procesar el comando recibido
+void processCommand(String command) {
+  command.trim();  // Elimina espacios en blanco al inicio y al final
+
+  if (command == "F") {
+    SerialBT.println("Avanzando");
+    Serial.println("Comando recibido: F - Avanzando");
+    avanzar();
+
+  } else if (command == "B") {
+    SerialBT.println("Retrocediendo");
+    Serial.println("Comando recibido: B - Retrocediendo");
+    retroceder();
+
+  } else if (command == "L") {
+    SerialBT.println("Girando Izquierda");
+    Serial.println("Comando recibido: L - Girando Izquierda");
+    girarIzquierda();
+  } else if (command == "R") {
+    SerialBT.println("Girando Derecha");
+    Serial.println("Comando recibido: R - Girando Derecha");
+    girarDerecha();
+
+  } else {
+    SerialBT.println("Comando no reconocido, deteniendo");
+    Serial.println("Comando no reconocido: " + command);
+    detener();
+
+  }
+}
+
+// Funciones para controlar los servos
+void avanzar() {
+  servoIzquierdo.write(AVANZAR);
+  servoDerecho.write(RETROCEDER);
+}
+
+void retroceder() {
+  servoIzquierdo.write(RETROCEDER);
+  servoDerecho.write(AVANZAR);
+}
+
+void girarIzquierda() {
+  servoIzquierdo.write(RETROCEDER);
+  servoDerecho.write(RETROCEDER);
+}
+
+void girarDerecha() {
+  servoIzquierdo.write(AVANZAR);
+  servoDerecho.write(AVANZAR);
+}
+
+void detener() {
+  servoIzquierdo.write(PARADO);
+  servoDerecho.write(PARADO);
+}
